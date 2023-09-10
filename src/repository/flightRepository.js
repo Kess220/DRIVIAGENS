@@ -23,7 +23,7 @@ async function isCityValid(cityId) {
     const result = await db.query(query, values);
     const count = result.rows[0].count;
 
-    return count > 0; // Retorna true se a cidade com o ID especificado existe, caso contrário, retorna false.
+    return count > 0;
   } catch (error) {
     throw new Error("Erro ao verificar a validade da cidade no banco de dados");
   }
@@ -55,17 +55,50 @@ async function createFlightRepo(origin, destination, date) {
   }
 }
 
-async function getAllFlightsRepo() {
+async function getAllFlightsRepo(queryParams) {
   try {
-    const query = `
-      SELECT * FROM flights;
+    let query = `
+      SELECT f.id, c1.name AS origin, c2.name AS destination, f.date
+      FROM flights f
+      LEFT JOIN cities c1 ON f.origin = c1.id
+      LEFT JOIN cities c2 ON f.destination = c2.id
+      WHERE 1=1
     `;
 
-    const result = await db.query(query);
+    const { origin, destination, smallerDate, biggerDate } = queryParams;
+    const values = [];
+
+    if (origin) {
+      query += " AND c1.name = $" + (values.length + 1) + "::text";
+      values.push(origin);
+    }
+
+    if (destination) {
+      query += " AND c2.name = $" + (values.length + 1) + "::text";
+      values.push(destination);
+    }
+
+    if (smallerDate && biggerDate) {
+      query +=
+        " AND date BETWEEN $" +
+        (values.length + 1) +
+        " AND $" +
+        (values.length + 2);
+      values.push(smallerDate, biggerDate);
+    }
+
+    query += " ORDER BY date ASC";
+
+    console.log("Generated SQL query:", query);
+    console.log("Query values:", values);
+
+    const result = await db.query(query, values);
+
+    console.log("Query result:", result.rows);
 
     return result.rows;
   } catch (error) {
-    throw Error("Erro ao buscar voos no banco de dados");
+    throw new Error("Erro ao buscar voos no banco de dados: " + error.message);
   }
 }
 

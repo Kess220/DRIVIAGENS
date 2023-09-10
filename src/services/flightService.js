@@ -6,7 +6,7 @@ import {
 } from "../repository/flightRepository.js";
 import { createFlightSchema } from "../validation/flightSchema.js";
 import HttpStatus from "http-status";
-import { parse } from "date-fns";
+import { format } from "date-fns"; // Importe apenas a função 'format' do date-fns
 
 async function createFlight(origin, destination, date) {
   try {
@@ -23,7 +23,6 @@ async function createFlight(origin, destination, date) {
       };
     }
 
-    // Verifica se as cidades de origem e destino são válidas usando a função isCityValid
     const isOriginValid = await isCityValid(origin);
     const isDestinationValid = await isCityValid(destination);
 
@@ -41,7 +40,6 @@ async function createFlight(origin, destination, date) {
       };
     }
 
-    // Verifica se a data é válida usando a função isDateValid
     const isDateValidResult = await isDateValid(date);
 
     if (!isDateValidResult) {
@@ -54,7 +52,10 @@ async function createFlight(origin, destination, date) {
     const newFlight = await createFlightRepo(origin, destination, date);
 
     return {
-      data: newFlight,
+      data: {
+        ...newFlight,
+        date: format(newFlight.date, "dd-MM-yyyy"), // Formate a data antes de retorná-la
+      },
       status: HttpStatus.CREATED,
     };
   } catch (error) {
@@ -65,4 +66,27 @@ async function createFlight(origin, destination, date) {
   }
 }
 
-export { createFlight };
+async function getAllFlights(queryParams) {
+  try {
+    const flights = await getAllFlightsRepo(queryParams);
+
+    console.log("Flights found:", flights); // Adicione esta linha
+
+    if (flights.length === 0) {
+      return [];
+    }
+
+    // Formate as datas dos voos encontrados antes de retorná-los
+    const formattedFlights = flights.map((flight) => ({
+      ...flight,
+      date: format(flight.date, "dd-MM-yyyy"),
+    }));
+
+    return formattedFlights;
+  } catch (error) {
+    console.error("Error in getAllFlights:", error); // Adicione esta linha
+    throw new Error("Erro ao buscar voos no banco de dados");
+  }
+}
+
+export { createFlight, getAllFlights };
