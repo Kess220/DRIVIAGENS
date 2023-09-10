@@ -21,4 +21,32 @@ const createPassenger = async (firstName, second_name) => {
   }
 };
 
-export { createPassenger };
+async function getPassengersTravelsRepo(nameFilter) {
+  try {
+    let query = `
+      SELECT p.first_name || ' ' || p.second_name AS passenger_name, COUNT(t.id) AS travels
+      FROM passengers p
+      LEFT JOIN travels t ON p.id = t.passenger_id
+      GROUP BY p.first_name, p.second_name
+    `;
+
+    if (nameFilter) {
+      query += ` HAVING p.first_name || ' ' || p.second_name ILIKE $1`;
+    }
+
+    query += ` ORDER BY travels DESC LIMIT 10`;
+
+    const values = nameFilter ? [`%${nameFilter}%`] : [];
+
+    const result = await db.query(query, values);
+
+    return result.rows.map((row) => ({
+      passenger: row.passenger_name,
+      travels: parseInt(row.travels),
+    }));
+  } catch (error) {
+    throw new Error("Error in getPassengersTravelsRepo: " + error.message);
+  }
+}
+
+export { createPassenger, getPassengersTravelsRepo };

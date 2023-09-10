@@ -1,4 +1,7 @@
-import { createPassenger } from "../repository/PassengerRepository.js";
+import {
+  createPassenger,
+  getPassengersTravelsRepo,
+} from "../repository/PassengerRepository.js";
 
 const createPassengerService = async (firstName, second_name) => {
   try {
@@ -14,4 +17,14 @@ const createPassengerService = async (firstName, second_name) => {
   }
 };
 
-export { createPassengerService };
+async function getPassengersTravels(nameFilter) {
+  try {
+    const passengersTravels = await getPassengersTravelsRepo(nameFilter);
+
+    return passengersTravels;
+  } catch (error) {
+    throw new Error("Error in getPassengersTravels service: " + error.message);
+  }
+}
+
+export { createPassengerService, getPassengersTravels };
